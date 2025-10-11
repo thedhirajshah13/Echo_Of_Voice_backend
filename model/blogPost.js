@@ -27,7 +27,7 @@ const blogSchema = mongoose.Schema(
     comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "comments" }],
     like: [{ type: mongoose.Schema.Types.ObjectId, ref: "likes" }],
   },
-  { timeStamps: true }
+ { timestamps: true }
 );
 
 const blogModel = mongoose.model("blogModel", blogSchema);

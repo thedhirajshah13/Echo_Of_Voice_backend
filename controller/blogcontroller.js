@@ -46,6 +46,35 @@ export const getpost = async (req, res) => {
   }
 };
 
+export const featuredBlog = async (req, res) => {
+  try {
+    const featuredBlog = await blogPostModel.aggregate([
+      {
+        $addFields: {
+          likeCount: { $size: "$like" },
+        },
+      },
+      {
+        $sort: {
+          likeCount: -1,
+        },
+      },
+      {
+        $limit: 1,
+      },
+    ]);
+    if (!featuredBlog || featuredBlog.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, msg: "No featured blog found" });
+    }
+    return res.status(200).json({ success: true, featuredBlog: featuredBlog });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ success: false, msg: "Server error", error });
+  }
+};
+
 export const fullBlog = async (req, res) => {
   try {
     const { id } = req.params;
