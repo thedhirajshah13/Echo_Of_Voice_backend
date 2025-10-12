@@ -3,7 +3,7 @@ import blogModel from "../model/blogPost.js";
 import blogPostModel from "../model/blogPost.js";
 import commentModel from "../model/commentPost.js";
 import likeModel from "../model/likePost.js";
-import mongoose from "mongoose";
+import { moderationData } from "../utils/moderation.js";
 
 export const postBlog = async (req, res) => {
   try {
@@ -112,26 +112,64 @@ export const fullBlog = async (req, res) => {
 export const postComment = async (req, res) => {
   try {
     const { message, blog } = req.body;
-    console.log(req.user._id);
 
+    if (!message || !blog) {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Message and blog ID are required" });
+    }
+
+    // 1️⃣ Get moderation scores from Perspective API
+    const moderationDataResult = await moderationData(message);
+
+    if (!moderationDataResult) {
+      return res
+        .status(500)
+        .json({ success: false, msg: "Error analyzing comment" });
+    }
+
+    // const { scores, detectedLanguages } = moderationDataResult;
+    const scores = moderationDataResult;
+
+    // 2️⃣ Decide if comment should be flagged
+    const THRESHOLD = 0.7; // you can adjust
+    const isFlagged = Object.values(scores).some((score) => score >= THRESHOLD);
+
+    // 3️⃣ Create the comment with scores & flagged info
     const blogComment = new commentModel({
       message,
       blog,
       user: req.user._id,
+      scoreSummary:scores, // store the Perspective scores
+      isFlagged, // true if any score is above threshold
+      
     });
 
+    // 4️⃣ Save comment
     await blogComment.save();
+
+    // 5️⃣ Update the blog's comments array (optional)
     await blogPostModel.findByIdAndUpdate(blog, {
       $push: { comments: blogComment._id },
     });
-    res
-      .status(200)
-      .json({ success: true, msg: "your comments has been posted Thanku" });
+
+    // 6️⃣ Respond to user with success + optional warning
+    const warningMsg = isFlagged
+      ? "Warning: Your comment may contain inappropriate content."
+      : null;
+
+    res.status(200).json({
+      success: true,
+      msg: "Your comment has been posted. Thank you!",
+      warning: warningMsg,
+      comment: blogComment,
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, msg: "Server Error" });
   }
 };
+
 export const blogLike = async (req, res) => {
   try {
     const blogId = req.body.blog;
@@ -169,5 +207,17 @@ export const blogLike = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, msg: "Server Error" });
+  }
+};
+
+export const testModeration = async (req, res) => {
+  try {
+    const result = await moderationData(
+      "Allah is great, and your god is stupid"
+    );
+    console.log(result);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ success: false, msg: "Server Error" });
   }
 };

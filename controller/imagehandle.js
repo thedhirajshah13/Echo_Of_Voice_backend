@@ -8,3 +8,4 @@ const ImageUpload = (req, res) => {
 };
 
 export default ImageUpload;
+

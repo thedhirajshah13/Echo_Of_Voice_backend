@@ -4,6 +4,7 @@ import userModel from "../model/userSchema.js";
 const protectRoute = async (req, res, next) => {
   try {
     const token = req.cookies.jwt;
+    console.log("jwt Token",token);
 
     if (!token) {
       return res
