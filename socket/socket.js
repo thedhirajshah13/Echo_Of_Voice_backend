@@ -14,11 +14,11 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  console.log("a user connected", socket.id);
+  // console.log("a user connected", socket.id);
   const userId = socket.handshake.query.userId;
 
   if (userId) {
-    console.log(`user ${userId} is connected with socket Id: ${socket.id}`);
+    // console.log(`user ${userId} is connected with socket Id: ${socket.id}`);
   }
 
   socket.on("newComment", (commentData) => {
@@ -32,7 +32,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("a user disconnect", socket.id);
+    // console.log("a user disconnect", socket.id);
   });
 });
 

@@ -7,9 +7,9 @@ import generateToken from "../utils/generateToken.js";
 export const userRegister = async (req, res) => {
   try {
     const { name, email, password, profileImg } = req.body;
-    console.log(name, email, password, profileImg);
+    // console.log(name, email, password, profileImg);
     const userAlreadyExists = await userModel.findOne({ email });
-    console.log(userAlreadyExists);
+    // console.log(userAlreadyExists);
 
     if (userAlreadyExists) {
       return res
@@ -49,9 +49,9 @@ export const userRegister = async (req, res) => {
 export const userLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log(email);
+    // console.log(email);
     const findUser = await userModel.findOne({ email });
-    console.log(findUser)
+    // console.log(findUser)
     if (!findUser) {
       return res
         .status(404)

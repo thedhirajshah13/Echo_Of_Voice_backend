@@ -1,14 +1,23 @@
+import { v2 } from "cloudinary";
 import multer from "multer";
-import path from "path";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import dotenv from "dotenv";
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    return cb(null, "./uploads");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
+dotenv.config(); // load .env variables
+v2.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET,
+})
+
+const storage = new CloudinaryStorage({
+  cloudinary: v2,
+  params: {
+    folder: "media-uploads",
+    resource_type: "auto",
   },
 });
 
-const uploads = multer({ storage: storage });
-export default uploads;
+const uploadMedia = multer({ storage });
+
+export default uploadMedia;

@@ -8,7 +8,7 @@ import { moderationData } from "../utils/moderation.js";
 export const postBlog = async (req, res) => {
   try {
     const { title, catergories, blog, image } = req.body;
-    console.log(title, catergories, blog, image);
+    // console.log(title, catergories, blog, image);
 
     const blogPost = new blogPostModel({
       title,
@@ -184,14 +184,14 @@ export const blogLike = async (req, res) => {
       user: req.user._id,
       blog: blogId,
     });
-    console.log(exsistingLike);
+    // console.log(exsistingLike);
     if (exsistingLike) {
       return res
         .status(400)
         .json({ success: false, msg: "You Already Liked the post" });
     }
     if (req.body) {
-      console.log(req.user);
+      // console.log(req.user);
       const likeData = new likeModel({
         user: req.user._id,
         blog: blogId,
@@ -215,7 +215,7 @@ export const testModeration = async (req, res) => {
     const result = await moderationData(
       "Allah is great, and your god is stupid"
     );
-    console.log(result);
+    // console.log(result);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ success: false, msg: "Server Error" });
