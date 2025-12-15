@@ -18,7 +18,8 @@ const __dirname = dirname(__filename);
 
 // ✅ Always apply middleware before routes
 app.use(cors({
-  origin: "https://echoofvoices.netlify.app",
+  origin: ["http://localhost:3000", "https://echoofvoices.netlify.app"],
+  // origin:"https://localhost:3000",
   credentials: true,
 }));
 

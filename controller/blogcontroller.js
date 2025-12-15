@@ -34,9 +34,29 @@ export const getpost = async (req, res) => {
     const posts = await blogPostModel.find().skip(skip).limit(limit);
     const totalPosts = await blogPostModel.countDocuments();
 
+    // create a safe HTML version of the blog text where newlines become <br />
+    const escapeAndConvert = (text) => {
+      if (!text && text !== "") return text;
+      // escape HTML special chars to avoid XSS
+      const escaped = String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+      // convert newlines to <br /> so browsers render line breaks
+      return escaped.replace(/\r?\n/g, "<br />");
+    };
+
+    const postsWithHtml = posts.map((p) => {
+      const obj = typeof p.toObject === "function" ? p.toObject() : { ...p };
+      obj.blogHtml = escapeAndConvert(obj.blog);
+      return obj;
+    });
+
     res.status(200).json({
       success: true,
-      posts,
+      posts: postsWithHtml,
       totalPosts,
       totalPages: Math.ceil(totalPosts / limit),
       currentpage: page,
@@ -97,12 +117,25 @@ export const fullBlog = async (req, res) => {
       });
 
     if (!fullBlog) {
-      res.status(404).json({ success: false, msg: "Blog Not Found" });
+      return res.status(404).json({ success: false, msg: "Blog Not Found" });
     }
-    //
-    if (fullBlog) {
-      res.status(200).json({ success: true, fullBlog });
-    }
+
+    // Add a safe HTML version for frontend rendering (preserve line breaks)
+    const escapeAndConvert = (text) => {
+      if (!text && text !== "") return text;
+      const escaped = String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+      return escaped.replace(/\r?\n/g, "<br />");
+    };
+
+    const fullBlogObj = typeof fullBlog.toObject === "function" ? fullBlog.toObject() : { ...fullBlog };
+    fullBlogObj.blogHtml = escapeAndConvert(fullBlogObj.blog);
+
+    return res.status(200).json({ success: true, fullBlog: fullBlogObj });
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, msg: "Server error", error });
