@@ -1,5 +1,6 @@
 import userModel from "../model/userSchema.js";
 
+
 import bcrypt from "bcrypt";
 
 import generateToken from "../utils/generateToken.js";
@@ -87,4 +88,25 @@ export const userLogin = async (req, res) => {
 export const userLogout = async (req, res) => {
   res.clearCookie("jwt", { httpOnly: true, secure: true, sameSite: "None" });
   return res.status(201).json({ msg: "loggedOut Succesfully", success: true });
+};
+
+// Get user profile
+
+export const getMyProfile = async (req, res) => {
+  const userId = req.user;
+  console.log("UserID in profile:", userId);
+
+  try {
+    const userProfile = await userModel.findById(userId).select("-password");
+
+    // console.log("My Blogs:", myBlogs);
+    if (!userProfile) {
+      return res.status(404).json({ success: false, msg: "User Not Found" });
+    }
+    console.log(userProfile);
+    return res.status(200).json({ success: true, Profile: userProfile });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ success: false, msg: "Server error", error });
+  }
 };

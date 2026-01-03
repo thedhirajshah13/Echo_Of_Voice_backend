@@ -34,29 +34,9 @@ export const getpost = async (req, res) => {
     const posts = await blogPostModel.find().skip(skip).limit(limit);
     const totalPosts = await blogPostModel.countDocuments();
 
-    // create a safe HTML version of the blog text where newlines become <br />
-    const escapeAndConvert = (text) => {
-      if (!text && text !== "") return text;
-      // escape HTML special chars to avoid XSS
-      const escaped = String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-      // convert newlines to <br /> so browsers render line breaks
-      return escaped.replace(/\r?\n/g, "<br />");
-    };
-
-    const postsWithHtml = posts.map((p) => {
-      const obj = typeof p.toObject === "function" ? p.toObject() : { ...p };
-      obj.blogHtml = escapeAndConvert(obj.blog);
-      return obj;
-    });
-
     res.status(200).json({
       success: true,
-      posts: postsWithHtml,
+      posts,
       totalPosts,
       totalPages: Math.ceil(totalPosts / limit),
       currentpage: page,
@@ -117,25 +97,12 @@ export const fullBlog = async (req, res) => {
       });
 
     if (!fullBlog) {
-      return res.status(404).json({ success: false, msg: "Blog Not Found" });
+      res.status(404).json({ success: false, msg: "Blog Not Found" });
     }
-
-    // Add a safe HTML version for frontend rendering (preserve line breaks)
-    const escapeAndConvert = (text) => {
-      if (!text && text !== "") return text;
-      const escaped = String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-      return escaped.replace(/\r?\n/g, "<br />");
-    };
-
-    const fullBlogObj = typeof fullBlog.toObject === "function" ? fullBlog.toObject() : { ...fullBlog };
-    fullBlogObj.blogHtml = escapeAndConvert(fullBlogObj.blog);
-
-    return res.status(200).json({ success: true, fullBlog: fullBlogObj });
+    //
+    if (fullBlog) {
+      res.status(200).json({ success: true, fullBlog });
+    }
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, msg: "Server error", error });
@@ -152,7 +119,7 @@ export const postComment = async (req, res) => {
         .json({ success: false, msg: "Message and blog ID are required" });
     }
 
-    // 1️⃣ Get moderation scores from Perspective API
+    //  Get moderation scores from Perspective API
     const moderationDataResult = await moderationData(message);
 
     if (!moderationDataResult) {
@@ -164,29 +131,28 @@ export const postComment = async (req, res) => {
     // const { scores, detectedLanguages } = moderationDataResult;
     const scores = moderationDataResult;
 
-    // 2️⃣ Decide if comment should be flagged
+    //  Decide if comment should be flagged
     const THRESHOLD = 0.7; // you can adjust
     const isFlagged = Object.values(scores).some((score) => score >= THRESHOLD);
 
-    // 3️⃣ Create the comment with scores & flagged info
+    //  Create the comment with scores & flagged info
     const blogComment = new commentModel({
       message,
       blog,
       user: req.user._id,
-      scoreSummary:scores, // store the Perspective scores
+      scoreSummary: scores, // store the Perspective scores
       isFlagged, // true if any score is above threshold
-      
     });
 
-    // 4️⃣ Save comment
+    //  Save comment
     await blogComment.save();
 
-    // 5️⃣ Update the blog's comments array (optional)
+    //  Update the blog's comments array (optional)
     await blogPostModel.findByIdAndUpdate(blog, {
       $push: { comments: blogComment._id },
     });
 
-    // 6️⃣ Respond to user with success + optional warning
+    //  Respond to user with success + optional warning
     const warningMsg = isFlagged
       ? "Warning: Your comment may contain inappropriate content."
       : null;
@@ -249,6 +215,36 @@ export const testModeration = async (req, res) => {
       "Allah is great, and your god is stupid"
     );
     // console.log(result);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ success: false, msg: "Server Error" });
+  }
+};
+
+export const getMyBlogs = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const myBlogs = await blogModel
+      .find({ user: userId })
+      .populate({
+        path: "comments",
+        populate: {
+          path: "user",
+          select: "email",
+        },
+      })
+      .populate({
+        path: "like",
+        populate: {
+          path: "user",
+          select: "email",
+        },
+      });
+    if (!myBlogs || myBlogs.length === 0) {
+      return res.status(404).json({ success: false, msg: "No Blogs Found" });
+    }
+
+    return res.status(200).json({ success: true, myBlogs });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ success: false, msg: "Server Error" });
