@@ -26,7 +26,7 @@ const protectRoute = async (req, res, next) => {
       });
     }
 
-    req.user = user._id; // ✅ only ID
+    req.user = user; // ✅ only ID
     next();
   } catch (error) {
     console.log("Protect Route Error:", error.message);

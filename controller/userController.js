@@ -97,7 +97,7 @@ export const getMyProfile = async (req, res) => {
   console.log("UserID in profile:", userId);
 
   try {
-    const userProfile = await userModel.findById(userId).select("-password");
+    const userProfile = await userModel.findById(userId._id).select("-password");
 
     // console.log("My Blogs:", myBlogs);
     if (!userProfile) {
