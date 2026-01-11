@@ -240,8 +240,8 @@ export const getMyBlogs = async (req, res) => {
           select: "email",
         },
       });
-    if (!myBlogs || myBlogs.length === 0) {
-      return res.status(404).json({ success: false, msg: "No Blogs Found" });
+    if ( myBlogs.length === 0) {
+      return res.status(200).json({ success: true, msg: "No blogs found", myBlogs });
     }
 
     return res.status(200).json({ success: true, myBlogs });
